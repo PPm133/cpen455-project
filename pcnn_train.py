@@ -177,13 +177,26 @@ if __name__ == '__main__':
                                                    **kwargs)
     else:
         raise Exception('{} dataset not in {mnist, cifar, cpen455}'.format(args.dataset))
-    
+
+    def compute_classification_accuracy(model, data_loader, device):
+        model.eval()
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for images, labels in data_loader:
+                images = images.to(device)
+                true_labels = torch.tensor([my_bidict[label] for label in labels]).to(device)
+                preds = get_label(model, images, device)  # your get_label function as defined earlier
+                correct += (preds == true_labels).sum().item()
+                total += images.size(0)
+        return correct / total if total > 0 else 0
+
     args.obs = (3, 32, 32)
     input_channels = args.obs[0]
     
     loss_op = lambda real, fake : discretized_mix_logistic_loss(real, fake, False)
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, args.nr_logistic_mix)
-
+    
     model = PixelCNN(nr_resnet=args.nr_resnet, nr_filters=args.nr_filters, 
                 input_channels=input_channels, nr_logistic_mix=args.nr_logistic_mix)
     model = model.to(device)
@@ -224,6 +237,11 @@ if __name__ == '__main__':
                       args = args,
                       epoch = epoch,
                       mode = 'val')
+        
+
+        train_acc = compute_classification_accuracy(model, train_loader, device)
+        wandb.log({"train_classification_accuracy": train_acc, "epoch": epoch})
+        print(f"Epoch {epoch}: Training classification accuracy = {train_acc:.4f}")
         
         if epoch % args.sampling_interval == 0:
             print('......sampling......')
