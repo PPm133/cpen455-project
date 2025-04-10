@@ -6,6 +6,7 @@ from torch.optim import lr_scheduler
 from torchvision import datasets, transforms
 import wandb
 from utils import *
+from classification_evaluation import *
 from model import * 
 from dataset import *
 from tqdm import tqdm
@@ -238,10 +239,6 @@ if __name__ == '__main__':
                       epoch = epoch,
                       mode = 'val')
         
-
-        train_acc = compute_classification_accuracy(model, train_loader, device)
-        wandb.log({"train_classification_accuracy": train_acc, "epoch": epoch})
-        print(f"Epoch {epoch}: Training classification accuracy = {train_acc:.4f}")
         
         if epoch % args.sampling_interval == 0:
             print('......sampling......')
@@ -266,6 +263,9 @@ if __name__ == '__main__':
                             "FID": fid_score})
         
         if (epoch + 1) % args.save_interval == 0: 
+            train_acc = compute_classification_accuracy(model, train_loader, device)
+            wandb.log({"train_classification_accuracy": train_acc, "epoch": epoch})
+            print(f"Epoch {epoch}: Training classification accuracy = {train_acc:.4f}")
             if not os.path.exists("models"):
                 os.makedirs("models")
             torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))

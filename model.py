@@ -99,6 +99,7 @@ class PixelCNN(nn.Module):
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
         self.init_embedding = nn.Embedding(NUM_CLASSES, self.nr_filters)
+        self.film = nn.Linear(self.nr_filters, 2 * self.nr_filters)
 
 
     def forward(self, x, labels, sample=False):
@@ -129,14 +130,17 @@ class PixelCNN(nn.Module):
                 u_list  += [self.downsize_u_stream[i](u_list[-1])]
                 ul_list += [self.downsize_ul_stream[i](ul_list[-1])]
         
-        # label_embeddings = self.init_embedding(labels.to(x.device)).unsqueeze(-1).unsqueeze(-1)
-        class_embedding = self.init_embedding(labels.to(x.device))
-        label_embeddings = class_embedding.view(x.size(0), self.nr_filters, 1, 1)
+        class_embedding = self.init_embedding(labels.to(x.device))  # shape: (B, nr_filters)
+        film_params = self.film(class_embedding)                    # shape: (B, 2 * nr_filters)
+        gamma, beta = film_params.chunk(2, dim=1)                     # each of shape: (B, nr_filters)
+        gamma = gamma.view(x.size(0), self.nr_filters, 1, 1)
+        beta = beta.view(x.size(0), self.nr_filters, 1, 1)
+
         for i in range(len(u_list)):
-            u_list[i] += label_embeddings
+            u_list[i] = gamma * u_list[i] + beta
 
         for i in range(len(ul_list)):
-            ul_list[i] += label_embeddings       
+            ul_list[i] = gamma * ul_list[i] + beta      
 
         ###    DOWN PASS    ###
         u  = u_list.pop()
