@@ -269,3 +269,7 @@ if __name__ == '__main__':
                        "val_classification_accuracy": val_acc,
                        "epoch": epoch})
             print(f"Epoch {epoch}: Training accuracy = {train_acc:.4f}, Validation accuracy = {val_acc:.4f}")
+            if not os.path.exists("models"):
+                os.makedirs("models")
+            if train_acc > 0.7 or val_acc > 0.7:
+                torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
