@@ -263,13 +263,10 @@ if __name__ == '__main__':
                             "FID": fid_score})
         
         if (epoch + 1) % args.save_interval == 0: 
-            train_acc = compute_classification_accuracy(model, train_loader, device)
             val_acc = compute_classification_accuracy(model, val_loader, device)
-            wandb.log({"train_classification_accuracy": train_acc,
-                       "val_classification_accuracy": val_acc,
+            wandb.log({"val_classification_accuracy": val_acc,
                        "epoch": epoch})
-            print(f"Epoch {epoch}: Training accuracy = {train_acc:.4f}, Validation accuracy = {val_acc:.4f}")
+            print(f"Epoch {epoch}: Validation accuracy = {val_acc:.4f}")
             if not os.path.exists("models"):
                 os.makedirs("models")
-            if train_acc > 0.7 or val_acc > 0.7:
-                torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
+            torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
