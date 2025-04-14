@@ -38,6 +38,7 @@ def get_label(model, model_input, device):
         
         # Stack losses so that losses shape becomes (batch_size, NUM_CLASSES)
         losses = torch.cat(losses, dim=1)
+        print(losses)
         # For each image, choose the label that gives the lowest negative log-likelihood.
         pred_labels = torch.argmin(losses, dim=1)
     return pred_labels
