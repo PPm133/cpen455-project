@@ -82,10 +82,10 @@ class PixelCNN(nn.Module):
         num_mix = 3 if self.input_channels == 1 else 10
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
-        self.early_embedding = nn.Embedding(NUM_CLASSES, input_channels)
+        self.early_embedding = nn.Embedding(NUM_CLASSES, input_channels * 32 * 32)
     def forward(self, x, labels, sample=False):
         B, C, H, W = x.size()
-        x = x + self.early_embedding(labels.to(x.device)).view(B, self.input_channels, 1, 1)
+        x = x + self.early_embedding(labels.to(x.device)).view(B, self.input_channels, H, W)
         if self.init_padding is not sample:
             xs = [int(y) for y in x.size()]
             padding = Variable(torch.ones(xs[0], 1, xs[2], xs[3]), requires_grad=False)
