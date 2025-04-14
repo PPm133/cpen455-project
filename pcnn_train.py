@@ -244,6 +244,7 @@ if __name__ == '__main__':
             print('......sampling......')
             all_samples = []
             for label in range(num_classes):
+                num_classes = 4
                 img_labels = torch.full((args.sample_batch_size,), label, dtype=torch.int64).to(next(model.parameters()).device)
                 sample_t = sample(model, args.sample_batch_size, args.obs, sample_op, img_labels)
                 sample_t = rescaling_inv(sample_t)
