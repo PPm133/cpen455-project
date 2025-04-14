@@ -1,4 +1,4 @@
-'''
+ '''
 This code is used to evaluate the classification accuracy of the trained model.
 You should at least guarantee this code can run without any error on validation set.
 And whether this code can run is the most important factor for grading.
@@ -38,7 +38,7 @@ def get_label(model, model_input, device):
         
         # Stack losses so that losses shape becomes (batch_size, NUM_CLASSES)
         losses = torch.cat(losses, dim=1)
-        print(losses)
+        print(torch.min(losses,dim=1))
         # For each image, choose the label that gives the lowest negative log-likelihood.
         pred_labels = torch.argmin(losses, dim=1)
     return pred_labels
