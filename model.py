@@ -1,6 +1,9 @@
-import torch.nn as nn
-from layers import *
+import os
 import math
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+from layers import *
 
 class PixelCNNLayer_up(nn.Module):
     def __init__(self, nr_resnet, nr_filters, resnet_nonlinearity):
@@ -24,7 +27,6 @@ class PixelCNNLayer_up(nn.Module):
             ul_list += [ul]
         return u_list, ul_list
 
-
 class PixelCNNLayer_down(nn.Module):
     def __init__(self, nr_resnet, nr_filters, resnet_nonlinearity):
         super(PixelCNNLayer_down, self).__init__()
@@ -43,7 +45,6 @@ class PixelCNNLayer_down(nn.Module):
             u  = self.u_stream[i](u, a=u_list.pop())
             ul = self.ul_stream[i](ul, a=torch.cat((u, ul_list.pop()), 1))
         return u, ul
-
 
 class PixelCNN(nn.Module):
     import math
@@ -83,6 +84,7 @@ class PixelCNN(nn.Module):
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
         self.early_embedding = nn.Embedding(NUM_CLASSES, input_channels * 32 * 32)
+        self.middle_embedding = nn.Embedding(NUM_CLASSES, nr_filters)
     def forward(self, x, labels, sample=False):
         B, C, H, W = x.size()
         x = x + self.early_embedding(labels.to(x.device)).view(B, self.input_channels, H, W)
@@ -95,7 +97,6 @@ class PixelCNN(nn.Module):
             padding = Variable(torch.ones(xs[0], 1, xs[2], xs[3]), requires_grad=False)
             padding = padding.cuda() if x.is_cuda else padding
             x = torch.cat((x, padding), 1)
-        ###      UP PASS    ###
         x = x if sample else torch.cat((x, self.init_padding), 1)
         u_list  = [self.u_init(x)]
         ul_list = [self.ul_init[0](x) + self.ul_init[1](x)]
@@ -106,7 +107,12 @@ class PixelCNN(nn.Module):
             if i != 2:
                 u_list  += [self.downsize_u_stream[i](u_list[-1])]
                 ul_list += [self.downsize_ul_stream[i](ul_list[-1])]
-        ###    DOWN PASS    ###
+        middle_emb = self.middle_embedding(labels.to(x.device))
+        middle_emb = middle_emb.view(B, self.nr_filters, 1, 1)
+        for i in range(len(u_list)):
+            u_list[i] = u_list[i] + middle_emb
+        for i in range(len(ul_list)):
+            ul_list[i] = ul_list[i] + middle_emb
         u  = u_list.pop()
         ul = ul_list.pop()
         for i in range(3):
