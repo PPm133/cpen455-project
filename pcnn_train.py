@@ -242,22 +242,24 @@ if __name__ == '__main__':
         
         if epoch % args.sampling_interval == 0:
             print('......sampling......')
-            labels = torch.randint(0, 4, (args.sample_batch_size,)).to(next(model.parameters()).device)
-            print(labels.size())
-            sample_t = sample(model, args.sample_batch_size, args.obs, sample_op, labels)
-            sample_t = rescaling_inv(sample_t)
-            save_images(sample_t, args.sample_dir)
-            sample_result = wandb.Image(sample_t, caption="epoch {}".format(epoch))
+            all_samples = []
+            for label in range(num_classes):
+                img_labels = torch.full((args.sample_batch_size,), label, dtype=torch.int64).to(next(model.parameters()).device)
+                sample_t = sample(model, args.sample_batch_size, args.obs, sample_op, img_labels)
+                sample_t = rescaling_inv(sample_t)
+                save_images(sample_t, args.sample_dir, label)
+                all_samples.append(sample_t)
+            combined_samples = torch.cat(all_samples, dim=0)
+            sample_result = wandb.Image(combined_samples, caption="epoch {}".format(epoch))
             
             gen_data_dir = args.sample_dir
-            ref_data_dir = args.data_dir +'/test'
+            ref_data_dir = args.data_dir + '/test'
             paths = [gen_data_dir, ref_data_dir]
             try:
                 fid_score = calculate_fid_given_paths(paths, 32, device, dims=192)
                 print("Dimension {:d} works! fid score: {}".format(192, fid_score))
             except:
-                print("Dimension {:d} fails!".format(192))
-                
+                print("Dimension {:d} fails!".format(192))              
             if args.en_wandb:
                 wandb.log({"samples": sample_result,
                             "FID": fid_score})
