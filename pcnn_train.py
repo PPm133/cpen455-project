@@ -187,7 +187,7 @@ if __name__ == '__main__':
             for images, labels in data_loader:
                 images = images.to(device)
                 true_labels = torch.tensor([my_bidict[label] for label in labels]).to(device)
-                preds = get_label(model, images, device)  # your get_label function as defined earlier
+                preds = get_label(model, images, device) #from c_e.py
                 correct += (preds == true_labels).sum().item()
                 total += images.size(0)
         return correct / total if total > 0 else 0
@@ -241,7 +241,7 @@ if __name__ == '__main__':
         
         
         if epoch % args.sampling_interval == 0:
-            num_classes = 4
+            num_classes = len(my_bidict)
             print('......sampling......')
             all_samples = []
             for label in range(num_classes):
@@ -256,20 +256,11 @@ if __name__ == '__main__':
             gen_data_dir = args.sample_dir
             ref_data_dir = args.data_dir + '/test'
             paths = [gen_data_dir, ref_data_dir]
-            try:
-                fid_score = calculate_fid_given_paths(paths, 32, device, dims=192)
-                print("Dimension {:d} works! fid score: {}".format(192, fid_score))
-            except:
-                print("Dimension {:d} fails!".format(192))              
-            if args.en_wandb:
-                wandb.log({"samples": sample_result,
-                            "FID": fid_score})
         
         if (epoch + 1) % args.save_interval == 0: 
-            val_acc = compute_classification_accuracy(model, val_loader, device)
-            wandb.log({"val_classification_accuracy": val_acc,
-                       "epoch": epoch})
-            print(f"Epoch {epoch}: Validation accuracy = {val_acc:.4f}")
+            train_acc = compute_classification_accuracy(model, train_loader, device)
+            wandb.log({"train_classification_accuracy": train_acc, "epoch": epoch})
+            print(f"Epoch {epoch}: Training classification accuracy = {train_acc:.4f}")
             if not os.path.exists("models"):
                 os.makedirs("models")
             torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
